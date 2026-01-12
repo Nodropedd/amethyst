@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIVALS - Portal de Torneos</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const translations = {
+            es: {
+                title: 'RIVALS',
+                subtitle: 'Portal Oficial de Torneos',
+                tournaments: 'Torneos',
+                profile: 'Perfil',
+                currentTournaments: 'Torneos Activos',
+                register: 'Registrarse Ahora',
+                close: 'Cerrar',
+                step1Title: 'Paso 1: Síguenos en Roblox',
+                step1Desc: 'Para participar debes seguir nuestra cuenta oficial',
+                clickHere: 'Abrir Perfil de Roblox',
+                step2Title: 'Paso 2: Confirma tu Usuario',
+                usernamePlaceholder: 'Usuario de Roblox',
+                warning: 'Si no nos sigues en Roblox, tu registro será rechazado',
+                accept: 'Confirmar Registro',
+                successMessage: '¡Registro completado exitosamente!',
+                myTournaments: 'Mis Torneos',
+                participating: 'Participando como',
+                noTournaments: 'Aún no estás inscrito en ningún torneo',
+                date: 'Fecha',
+                time: 'Horario',
+                prize: 'Premio',
+                mode: 'Modalidad',
+                slots: 'Cupos Limitados'
+            },
+            en: {
+                title: 'RIVALS',
+                subtitle: 'Official Tournament Portal',
+                tournaments: 'Tournaments',
+                profile: 'Profile',
+                currentTournaments: 'Active Tournaments',
+                register: 'Register Now',
+                close: 'Close',
+                step1Title: 'Step 1: Follow us on Roblox',
+                step1Desc: 'You must follow our official account to participate',
+                clickHere: 'Open Roblox Profile',
+                step2Title: 'Step 2: Confirm your Username',
+                usernamePlaceholder: 'Roblox Username',
+                warning: 'If you don\'t follow us on Roblox, your registration will be rejected',
+                accept: 'Confirm Registration',
+                successMessage: 'Registration completed successfully!',
+                myTournaments: 'My Tournaments',
+                participating: 'Participating as',
+                noTournaments: 'You are not registered in any tournament yet',
+                date: 'Date',
+                time: 'Time',
+                prize: 'Prize',
+                mode: 'Mode',
+                slots: 'Limited Slots'
+            },
+            pt: {
+                title: 'RIVALS',
+                subtitle: 'Portal Oficial de Torneios',
+                tournaments: 'Torneios',
+                profile: 'Perfil',
+                currentTournaments: 'Torneios Ativos',
+                register: 'Registrar Agora',
+                close: 'Fechar',
+                step1Title: 'Passo 1: Siga-nos no Roblox',
+                step1Desc: 'Para participar você deve seguir nossa conta oficial',
+                clickHere: 'Abrir Perfil do Roblox',
+                step2Title: 'Passo 2: Confirme seu Usuário',
+                usernamePlaceholder: 'Usuário do Roblox',
+                warning: 'Se você não nos seguir no Roblox, seu registro será rejeitado',
+                accept: 'Confirmar Registro',
+                successMessage: 'Registro concluído com sucesso!',
+                myTournaments: 'Meus Torneios',
+                participating: 'Participando como',
+                noTournaments: 'Você ainda não está inscrito em nenhum torneio',
+                date: 'Data',
+                time: 'Horário',
+                prize: 'Prêmio',
+                mode: 'Modalidade',
+                slots: 'Vagas Limitadas'
+            }
+        };
+
+        const Globe = () => (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+        );
+
+        const Trophy = () => (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                <path d="M4 22h16"></path>
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+            </svg>
+        );
+
+        const User = () => (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        );
+
+        const Calendar = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+        );
+
+        const Clock = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+        );
+
+        const Award = ({ size = 20 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="7"></circle>
+                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+            </svg>
+        );
+
+        const X = ({ size = 28 }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        );
+
+        const App = () => {
+            const [lang, setLang] = useState('es');
+            const [view, setView] = useState('home');
+            const [showModal, setShowModal] = useState(false);
+            const [selectedTournament, setSelectedTournament] = useState(null);
+            const [step, setStep] = useState(1);
+            const [username, setUsername] = useState('');
+            const [showSuccess, setShowSuccess] = useState(false);
+            const [userTournaments, setUserTournaments] = useState([]);
+
+            const t = translations[lang];
+
+            const tournaments = [
+                {
+                    id: 1,
+                    name: '1v1 Championship',
+                    mode: '1v1 por Rondas',
+                    date: new Date('2026-01-18T17:30:00Z'),
+                    prize: 'x2 Skin Cases',
+                    icon: '🎯'
+                },
+                {
+                    id: 2,
+                    name: '2v2 Team Battle',
+                    mode: '2v2 por Rondas',
+                    date: new Date('2026-01-31T16:30:00Z'),
+                    prize: '1,500 Robux',
+                    icon: '⚔️'
+                }
+            ];
+
+            const formatDate = (date) => {
+                return date.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            };
+
+            const formatTime = (date) => {
+                const options = {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Europe/Paris',
+                    timeZoneName: 'short'
+                };
+                return date.toLocaleTimeString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', options);
+            };
+
+            const handleRegister = (tournament) => {
+                setSelectedTournament(tournament);
+                setShowModal(true);
+                setStep(1);
+                setUsername('');
+            };
+
+            const handleAccept = () => {
+                if (username.trim()) {
+                    const newRegistration = {
+                        ...selectedTournament,
+                        username: username.trim()
+                    };
+                    setUserTournaments([...userTournaments, newRegistration]);
+                    setShowModal(false);
+                    setShowSuccess(true);
+                    setTimeout(() => setShowSuccess(false), 3000);
+                }
+            };
+
+            return (
+                <div style={{minHeight: '100vh', backgroundColor: '#1a1a1a'}} className="text-white">
+                    <header style={{backgroundColor: '#0f0f0f'}} className="border-b border-gray-800">
+                        <div className="container mx-auto px-4 py-6">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                                <div className="text-center md:text-left">
+                                    <h1 className="text-5xl font-black text-orange-500">{t.title}</h1>
+                                    <p className="text-gray-400 font-medium mt-1">{t.subtitle}</p>
+                                </div>
+                                
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setLang(lang === 'es' ? 'en' : lang === 'en' ? 'pt' : 'es')}
+                                        style={{backgroundColor: '#2a2a2a'}}
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl hover:bg-gray-700 transition-all border border-gray-700"
+                                    >
+                                        <span className="text-orange-400"><Globe /></span>
+                                        <span className="font-semibold text-white uppercase">{lang.toUpperCase()}</span>
+                                    </button>
+                                    <button
+                                        onClick={() => window.open('https://discord.gg/w3JngnxyUg', '_blank')}
+                                        style={{backgroundColor: '#ff6b35'}}
+                                        className="px-6 py-2.5 rounded-xl hover:bg-orange-600 transition-all font-bold text-white"
+                                    >
+                                        Discord
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <nav style={{backgroundColor: '#0f0f0f'}} className="border-b border-gray-800">
+                        <div className="container mx-auto px-4">
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => setView('tournaments')}
+                                    className={`flex items-center gap-2 px-8 py-4 font-bold transition-all relative ${
+                                        view === 'tournaments' ? 'text-white' : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    {view === 'tournaments' && (
+                                        <div style={{backgroundColor: '#ff6b35'}} className="absolute bottom-0 left-0 right-0 h-1 rounded-t-full"></div>
+                                    )}
+                                    <Trophy />
+                                    {t.tournaments}
+                                </button>
+                                <button
+                                    onClick={() => setView('profile')}
+                                    className={`flex items-center gap-2 px-8 py-4 font-bold transition-all relative ${
+                                        view === 'profile' ? 'text-white' : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    {view === 'profile' && (
+                                        <div style={{backgroundColor: '#ff6b35'}} className="absolute bottom-0 left-0 right-0 h-1 rounded-t-full"></div>
+                                    )}
+                                    <User />
+                                    {t.profile}
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main className="container mx-auto px-4 py-12">
+                        {view === 'tournaments' && (
+                            <div>
+                                <div className="text-center mb-12">
+                                    <h2 className="text-4xl font-black text-white mb-3">{t.currentTournaments}</h2>
+                                    <p className="text-gray-400 text-lg">{t.slots}</p>
+                                </div>
+                                
+                                <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                                    {tournaments.map((tournament) => (
+                                        <div
+                                            key={tournament.id}
+                                            style={{backgroundColor: '#2a2a2a'}}
+                                            className="rounded-3xl p-8 border border-gray-700 hover:border-orange-500 transition-all shadow-2xl hover:scale-105"
+                                        >
+                                            <div className="flex items-center justify-between mb-6">
+                                                <span className="text-5xl">{tournament.icon}</span>
+                                                <div style={{backgroundColor: '#ff6b35'}} className="px-4 py-1.5 rounded-full text-white text-sm font-bold">
+                                                    {tournament.mode}
+                                                </div>
+                                            </div>
+                                            
+                                            <h3 className="text-2xl font-black text-white mb-6">{tournament.name}</h3>
+                                            
+                                            <div className="space-y-4 mb-6">
+                                                <div style={{backgroundColor: '#1f1f1f'}} className="flex items-center gap-3 text-gray-300 rounded-xl p-3">
+                                                    <span className="text-orange-400"><Calendar size={20} /></span>
+                                                    <span className="font-medium">{formatDate(tournament.date)}</span>
+                                                </div>
+                                                <div style={{backgroundColor: '#1f1f1f'}} className="flex items-center gap-3 text-gray-300 rounded-xl p-3">
+                                                    <span className="text-orange-400"><Clock size={20} /></span>
+                                                    <span className="font-medium">{formatTime(tournament.date)}</span>
+                                                </div>
+                                                <div style={{backgroundColor: 'rgba(255, 107, 53, 0.1)'}} className="flex items-center gap-3 text-orange-400 rounded-xl p-3 border border-orange-500/30">
+                                                    <Award size={20} />
+                                                    <span className="font-bold text-lg">{tournament.prize}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <button
+                                                onClick={() => handleRegister(tournament)}
+                                                style={{backgroundColor: '#ff6b35'}}
+                                                className="w-full py-4 hover:bg-orange-600 rounded-xl font-black text-white transition-all shadow-lg text-lg"
+                                            >
+                                                {t.register}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'profile' && (
+                            <div className="max-w-4xl mx-auto">
+                                <div className="text-center mb-12">
+                                    <h2 className="text-4xl font-black text-white mb-3">{t.myTournaments}</h2>
+                                </div>
+                                
+                                {userTournaments.length === 0 ? (
+                                    <div style={{backgroundColor: '#2a2a2a'}} className="rounded-3xl p-12 text-center border border-gray-700">
+                                        <div className="mx-auto mb-4 text-gray-600" style={{width: '64px', height: '64px'}}>
+                                            <Trophy />
+                                        </div>
+                                        <p className="text-gray-400 text-xl">{t.noTournaments}</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {userTournaments.map((tournament, index) => (
+                                            <div
+                                                key={index}
+                                                style={{backgroundColor: '#2a2a2a'}}
+                                                className="rounded-2xl p-6 border border-gray-700 shadow-xl"
+                                            >
+                                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                                                    <div className="flex-1">
+                                                        <div style={{backgroundColor: '#ff6b35'}} className="inline-block px-3 py-1 rounded-full text-white text-xs font-bold mb-3">
+                                                            {tournament.mode}
+                                                        </div>
+                                                        <h3 className="text-2xl font-bold text-white mb-2">{tournament.name}</h3>
+                                                        <p className="text-gray-400">
+                                                            {t.participating}: <span className="text-orange-400 font-bold">{tournament.username}</span>
+                                                        </p>
+                                                    </div>
+                                                    <div className="space-y-3">
+                                                        <div style={{backgroundColor: '#1f1f1f'}} className="flex items-center gap-3 text-gray-300 rounded-xl p-3">
+                                                            <span className="text-orange-400"><Calendar size={18} /></span>
+                                                            <span className="font-medium">{formatDate(tournament.date)}</span>
+                                                        </div>
+                                                        <div style={{backgroundColor: '#1f1f1f'}} className="flex items-center gap-3 text-gray-300 rounded-xl p-3">
+                                                            <span className="text-orange-400"><Clock size={18} /></span>
+                                                            <span className="font-medium">{formatTime(tournament.date)}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </main>
+
+                    {showModal && (
+                        <div style={{backgroundColor: 'rgba(0,0,0,0.9)'}} className="fixed inset-0 flex items-center justify-center p-4 z-50">
+                            <div style={{backgroundColor: '#2a2a2a'}} className="rounded-3xl p-8 max-w-lg w-full border border-gray-700 shadow-2xl">
+                                <div className="flex justify-between items-start mb-6">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-white mb-2">{selectedTournament?.name}</h3>
+                                        <div style={{backgroundColor: '#ff6b35'}} className="inline-block px-3 py-1 rounded-full text-white text-sm font-bold">
+                                            {selectedTournament?.mode}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowModal(false)}
+                                        className="text-gray-400 hover:text-white transition-colors"
+                                    >
+                                        <X size={28} />
+                                    </button>
+                                </div>
+
+                                {step === 1 && (
+                                    <div className="space-y-6">
+                                        <div style={{backgroundColor: '#1f1f1f'}} className="rounded-2xl p-6 border border-gray-700">
+                                            <h4 className="font-bold text-white text-lg mb-3">{t.step1Title}</h4>
+                                            <p className="text-gray-400 mb-6">{t.step1Desc}</p>
+                                            <a
+                                                href="https://www.robiox.com.py/users/129150060972/profile"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{backgroundColor: '#3b82f6'}}
+                                                className="block w-full text-center py-4 hover:bg-blue-600 rounded-xl font-bold text-white transition-all shadow-lg"
+                                            >
+                                                {t.clickHere}
+                                            </a>
+                                        </div>
+                                        <button
+                                            onClick={() => setStep(2)}
+                                            style={{backgroundColor: '#ff6b35'}}
+                                            className="w-full py-4 hover:bg-orange-600 rounded-xl font-bold text-white transition-all shadow-lg"
+                                        >
+                                            {t.accept}
+                                        </button>
+                                    </div>
+                                )}
+
+                                {step === 2 && (
+                                    <div className="space-y-6">
+                                        <div style={{backgroundColor: '#1f1f1f'}} className="rounded-2xl p-6 border border-gray-700">
+                                            <h4 className="font-bold text-white text-lg mb-4">{t.step2Title}</h4>
+                                            <input
+                                                type="text"
+                                                value={username}
+                                                onChange={(e) => setUsername(e.target.value)}
+                                                placeholder={t.usernamePlaceholder}
+                                                style={{backgroundColor: '#0f0f0f'}}
+                                                className="w-full px-4 py-3 rounded-xl border border-gray-700 focus:border-orange-500 focus:outline-none text-white placeholder-gray-500"
+                                            />
+                                            <p className="text-xs text-red-400 mt-3 font-medium">{t.warning}</p>
+                                        </div>
+                                        <button
+                                            onClick={handleAccept}
+                                            style={{backgroundColor: '#ff6b35', opacity: !username.trim() ? 0.5 : 1, cursor: !username.trim() ? 'not-allowed' : 'pointer'}}
+                                            className="w-full py-4 hover:bg-orange-600 rounded-xl font-bold text-white transition-all shadow-lg"
+                                            disabled={!username.trim()}
+                                        >
+                                            {t.accept}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {showSuccess && (
+                        <div style={{backgroundColor: '#22c55e'}} className="fixed top-8 right-8 text-white px-8 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3">
+                            <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                            <span className="font-bold">{t.successMessage}</span>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
