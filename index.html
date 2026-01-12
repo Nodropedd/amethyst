@@ -31,7 +31,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
 
         const translations = {
             es: {
@@ -186,16 +186,30 @@
         );
 
         const App = () => {
-            const [lang, setLang] = useState('es');
+            const [lang, setLang] = useState(() => {
+                const saved = localStorage.getItem('rivals_lang');
+                return saved || 'es';
+            });
             const [view, setView] = useState('home');
             const [showModal, setShowModal] = useState(false);
             const [selectedTournament, setSelectedTournament] = useState(null);
             const [step, setStep] = useState(1);
             const [username, setUsername] = useState('');
             const [showSuccess, setShowSuccess] = useState(false);
-            const [userTournaments, setUserTournaments] = useState([]);
+            const [userTournaments, setUserTournaments] = useState(() => {
+                const saved = localStorage.getItem('rivals_tournaments');
+                return saved ? JSON.parse(saved) : [];
+            });
 
             const t = translations[lang];
+
+            useEffect(() => {
+                localStorage.setItem('rivals_lang', lang);
+            }, [lang]);
+
+            useEffect(() => {
+                localStorage.setItem('rivals_tournaments', JSON.stringify(userTournaments));
+            }, [userTournaments]);
 
             const tournaments = [
                 {
@@ -245,6 +259,7 @@
                 if (username.trim()) {
                     const newRegistration = {
                         ...selectedTournament,
+                        date: selectedTournament.date.toISOString(),
                         username: username.trim()
                     };
                     setUserTournaments([...userTournaments, newRegistration]);
@@ -455,7 +470,9 @@
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
-                                        {userTournaments.map((tournament, index) => (
+                                        {userTournaments.map((tournament, index) => {
+                                            const tournamentDate = new Date(tournament.date);
+                                            return (
                                             <div
                                                 key={index}
                                                 style={{backgroundColor: '#2a2a2a'}}
@@ -474,16 +491,17 @@
                                                     <div className="space-y-3">
                                                         <div style={{backgroundColor: '#1f1f1f'}} className="flex items-center gap-3 text-gray-300 rounded-xl p-3">
                                                             <span className="text-orange-400"><Calendar size={18} /></span>
-                                                            <span className="font-medium">{formatDate(tournament.date)}</span>
+                                                            <span className="font-medium">{formatDate(tournamentDate)}</span>
                                                         </div>
                                                         <div style={{backgroundColor: '#1f1f1f'}} className="flex items-center gap-3 text-gray-300 rounded-xl p-3">
                                                             <span className="text-orange-400"><Clock size={18} /></span>
-                                                            <span className="font-medium">{formatTime(tournament.date)}</span>
+                                                            <span className="font-medium">{formatTime(tournamentDate)}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
