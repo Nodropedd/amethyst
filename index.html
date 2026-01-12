@@ -39,6 +39,12 @@
                 subtitle: 'Portal Oficial de Torneos',
                 tournaments: 'Torneos',
                 profile: 'Perfil',
+                welcome: 'Bienvenido',
+                welcomeMsg1: 'Click en Torneos para ver los torneos disponibles',
+                welcomeMsg2: 'Click en Perfil para ver los torneos en los que participarás',
+                welcomeMsg3: 'Únete al Discord para mayor soporte',
+                welcomeMsg4: 'Cambia de idioma si es necesario',
+                welcomeMsg5: 'Asegúrate de verificar las zonas horarias',
                 currentTournaments: 'Torneos Activos',
                 register: 'Registrarse Ahora',
                 close: 'Cerrar',
@@ -64,6 +70,12 @@
                 subtitle: 'Official Tournament Portal',
                 tournaments: 'Tournaments',
                 profile: 'Profile',
+                welcome: 'Welcome',
+                welcomeMsg1: 'Click on Tournaments to see available tournaments',
+                welcomeMsg2: 'Click on Profile to see the tournaments you will participate in',
+                welcomeMsg3: 'Join Discord for more support',
+                welcomeMsg4: 'Change language if necessary',
+                welcomeMsg5: 'Make sure to verify time zones',
                 currentTournaments: 'Active Tournaments',
                 register: 'Register Now',
                 close: 'Close',
@@ -89,6 +101,12 @@
                 subtitle: 'Portal Oficial de Torneios',
                 tournaments: 'Torneios',
                 profile: 'Perfil',
+                welcome: 'Bem-vindo',
+                welcomeMsg1: 'Clique em Torneios para ver os torneios disponíveis',
+                welcomeMsg2: 'Clique em Perfil para ver os torneios em que você participará',
+                welcomeMsg3: 'Junte-se ao Discord para mais suporte',
+                welcomeMsg4: 'Mude o idioma se necessário',
+                welcomeMsg5: 'Certifique-se de verificar os fusos horários',
                 currentTournaments: 'Torneios Ativos',
                 register: 'Registrar Agora',
                 close: 'Fechar',
@@ -299,6 +317,78 @@
                     </nav>
 
                     <main className="container mx-auto px-4 py-12">
+                        {view === 'home' && (
+                            <div className="max-w-4xl mx-auto">
+                                <div className="text-center mb-12">
+                                    <h2 className="text-5xl font-black text-orange-500 mb-4">{t.welcome}</h2>
+                                    <div className="w-24 h-1 bg-orange-500 mx-auto rounded-full mb-8"></div>
+                                </div>
+
+                                <div className="grid gap-6">
+                                    <div style={{backgroundColor: '#2a2a2a'}} className="rounded-2xl p-8 border border-gray-700 hover:border-orange-500 transition-all">
+                                        <div className="flex items-start gap-4">
+                                            <div style={{backgroundColor: '#ff6b35'}} className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-2xl">
+                                                🏆
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-xl font-bold text-white mb-2">{t.welcomeMsg1}</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{backgroundColor: '#2a2a2a'}} className="rounded-2xl p-8 border border-gray-700 hover:border-orange-500 transition-all">
+                                        <div className="flex items-start gap-4">
+                                            <div style={{backgroundColor: '#ff6b35'}} className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-2xl">
+                                                👤
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-xl font-bold text-white mb-2">{t.welcomeMsg2}</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{backgroundColor: '#2a2a2a'}} className="rounded-2xl p-8 border border-gray-700 hover:border-orange-500 transition-all">
+                                        <div className="flex items-start gap-4">
+                                            <div style={{backgroundColor: '#ff6b35'}} className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-2xl">
+                                                💬
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-xl font-bold text-white mb-2">{t.welcomeMsg3}</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{backgroundColor: '#2a2a2a'}} className="rounded-2xl p-8 border border-gray-700 hover:border-orange-500 transition-all">
+                                        <div className="flex items-start gap-4">
+                                            <div style={{backgroundColor: '#ff6b35'}} className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-2xl">
+                                                🌍
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-xl font-bold text-white mb-2">{t.welcomeMsg4}</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{backgroundColor: '#2a2a2a'}} className="rounded-2xl p-8 border border-gray-700 hover:border-orange-500 transition-all">
+                                        <div className="flex items-start gap-4">
+                                            <div style={{backgroundColor: '#ff6b35'}} className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-2xl">
+                                                ⏰
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-xl font-bold text-white mb-2">{t.welcomeMsg5}</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-12 text-center">
+                                    <p className="text-gray-400 text-lg">
+                                        📍 {t.tournaments === 'Torneos' ? 'Todos los horarios están en CET (Hora Central Europea)' : t.tournaments === 'Tournaments' ? 'All times are in CET (Central European Time)' : 'Todos os horários estão em CET (Hora Central Europeia)'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {view === 'tournaments' && (
                             <div>
                                 <div className="text-center mb-12">
