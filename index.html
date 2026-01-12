@@ -33,6 +33,39 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // Funciones de almacenamiento
+        const storage = {
+            getItem: (key) => {
+                try {
+                    const item = localStorage.getItem(key);
+                    console.log('Getting from storage:', key, item);
+                    return item;
+                } catch (error) {
+                    console.error('Error getting from storage:', error);
+                    return null;
+                }
+            },
+            setItem: (key, value) => {
+                try {
+                    localStorage.setItem(key, value);
+                    console.log('Saved to storage:', key, value);
+                    return true;
+                } catch (error) {
+                    console.error('Error saving to storage:', error);
+                    return false;
+                }
+            },
+            removeItem: (key) => {
+                try {
+                    localStorage.removeItem(key);
+                    return true;
+                } catch (error) {
+                    console.error('Error removing from storage:', error);
+                    return false;
+                }
+            }
+        };
+
         const translations = {
             es: {
                 title: 'RIVALS',
@@ -186,29 +219,50 @@
         );
 
         const App = () => {
-            const [lang, setLang] = useState(() => {
-                const saved = localStorage.getItem('rivals_lang');
+            // Cargar idioma guardado
+            const loadLanguage = () => {
+                const saved = storage.getItem('rivals_language');
                 return saved || 'es';
-            });
+            };
+
+            // Cargar torneos guardados
+            const loadTournaments = () => {
+                try {
+                    const saved = storage.getItem('rivals_user_tournaments');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        console.log('Loaded tournaments:', parsed);
+                        return parsed;
+                    }
+                    return [];
+                } catch (error) {
+                    console.error('Error loading tournaments:', error);
+                    return [];
+                }
+            };
+
+            const [lang, setLang] = useState(loadLanguage());
             const [view, setView] = useState('home');
             const [showModal, setShowModal] = useState(false);
             const [selectedTournament, setSelectedTournament] = useState(null);
             const [step, setStep] = useState(1);
             const [username, setUsername] = useState('');
             const [showSuccess, setShowSuccess] = useState(false);
-            const [userTournaments, setUserTournaments] = useState(() => {
-                const saved = localStorage.getItem('rivals_tournaments');
-                return saved ? JSON.parse(saved) : [];
-            });
+            const [userTournaments, setUserTournaments] = useState(loadTournaments());
 
             const t = translations[lang];
 
+            // Guardar idioma cuando cambie
             useEffect(() => {
-                localStorage.setItem('rivals_lang', lang);
+                storage.setItem('rivals_language', lang);
+                console.log('Language saved:', lang);
             }, [lang]);
 
+            // Guardar torneos cuando cambien
             useEffect(() => {
-                localStorage.setItem('rivals_tournaments', JSON.stringify(userTournaments));
+                const data = JSON.stringify(userTournaments);
+                storage.setItem('rivals_user_tournaments', data);
+                console.log('Tournaments saved:', userTournaments);
             }, [userTournaments]);
 
             const tournaments = [
@@ -216,7 +270,7 @@
                     id: 1,
                     name: '1v1 Championship',
                     mode: '1v1 por Rondas',
-                    date: new Date('2026-01-18T17:30:00Z'),
+                    date: '2026-01-18T17:30:00Z',
                     prize: 'x2 Skin Cases',
                     icon: '🎯'
                 },
@@ -224,13 +278,14 @@
                     id: 2,
                     name: '2v2 Team Battle',
                     mode: '2v2 por Rondas',
-                    date: new Date('2026-01-31T16:30:00Z'),
+                    date: '2026-01-31T16:30:00Z',
                     prize: '1,500 Robux',
                     icon: '⚔️'
                 }
             ];
 
-            const formatDate = (date) => {
+            const formatDate = (dateString) => {
+                const date = new Date(dateString);
                 return date.toLocaleDateString(lang === 'es' ? 'es-ES' : lang === 'pt' ? 'pt-BR' : 'en-US', {
                     day: 'numeric',
                     month: 'long',
@@ -238,7 +293,8 @@
                 });
             };
 
-            const formatTime = (date) => {
+            const formatTime = (dateString) => {
+                const date = new Date(dateString);
                 const options = {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -258,15 +314,31 @@
             const handleAccept = () => {
                 if (username.trim()) {
                     const newRegistration = {
-                        ...selectedTournament,
-                        date: selectedTournament.date.toISOString(),
-                        username: username.trim()
+                        id: selectedTournament.id,
+                        name: selectedTournament.name,
+                        mode: selectedTournament.mode,
+                        date: selectedTournament.date,
+                        prize: selectedTournament.prize,
+                        icon: selectedTournament.icon,
+                        username: username.trim(),
+                        registeredAt: new Date().toISOString()
                     };
-                    setUserTournaments([...userTournaments, newRegistration]);
+                    
+                    const updatedTournaments = [...userTournaments, newRegistration];
+                    setUserTournaments(updatedTournaments);
+                    
                     setShowModal(false);
                     setShowSuccess(true);
                     setTimeout(() => setShowSuccess(false), 3000);
+                    
+                    console.log('New tournament registered:', newRegistration);
+                    console.log('All tournaments:', updatedTournaments);
                 }
+            };
+
+            const changeLang = () => {
+                const newLang = lang === 'es' ? 'en' : lang === 'en' ? 'pt' : 'es';
+                setLang(newLang);
             };
 
             return (
@@ -281,7 +353,7 @@
                                 
                                 <div className="flex gap-3">
                                     <button
-                                        onClick={() => setLang(lang === 'es' ? 'en' : lang === 'en' ? 'pt' : 'es')}
+                                        onClick={changeLang}
                                         style={{backgroundColor: '#2a2a2a'}}
                                         className="flex items-center gap-2 px-5 py-2.5 rounded-xl hover:bg-gray-700 transition-all border border-gray-700"
                                     >
@@ -470,9 +542,7 @@
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
-                                        {userTournaments.map((tournament, index) => {
-                                            const tournamentDate = new Date(tournament.date);
-                                            return (
+                                        {userTournaments.map((tournament, index) => (
                                             <div
                                                 key={index}
                                                 style={{backgroundColor: '#2a2a2a'}}
@@ -491,17 +561,16 @@
                                                     <div className="space-y-3">
                                                         <div style={{backgroundColor: '#1f1f1f'}} className="flex items-center gap-3 text-gray-300 rounded-xl p-3">
                                                             <span className="text-orange-400"><Calendar size={18} /></span>
-                                                            <span className="font-medium">{formatDate(tournamentDate)}</span>
+                                                            <span className="font-medium">{formatDate(tournament.date)}</span>
                                                         </div>
                                                         <div style={{backgroundColor: '#1f1f1f'}} className="flex items-center gap-3 text-gray-300 rounded-xl p-3">
                                                             <span className="text-orange-400"><Clock size={18} /></span>
-                                                            <span className="font-medium">{formatTime(tournamentDate)}</span>
+                                                            <span className="font-medium">{formatTime(tournament.date)}</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            );
-                                        })}
+                                        ))}
                                     </div>
                                 )}
                             </div>
