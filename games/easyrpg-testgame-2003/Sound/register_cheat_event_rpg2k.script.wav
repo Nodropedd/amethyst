@@ -1,0 +1,5 @@
+[Execute]
+Action=registerCheatEvent
+Cheat=RPG Maker 2000
+Value=42000
+next=

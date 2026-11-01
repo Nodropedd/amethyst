@@ -1,0 +1,4 @@
+[Execute]
+Action=ExecProgram
+command=program
+next=

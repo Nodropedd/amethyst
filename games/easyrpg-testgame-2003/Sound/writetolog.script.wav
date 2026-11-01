@@ -1,0 +1,5 @@
+[Execute]
+;Just a comment to show that comments can be put in .script.wav files
+Action=WriteToLog
+Text=Hello World! I'm a log text!
+next=

@@ -1,0 +1,5 @@
+[Execute]
+Action=EnableMouseSupport
+Enable=true
+ID=-11
+next=

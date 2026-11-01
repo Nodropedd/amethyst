@@ -1,0 +1,3 @@
+[Execute]
+Action=GetMousePosition
+next=

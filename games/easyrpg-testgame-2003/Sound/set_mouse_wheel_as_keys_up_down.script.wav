@@ -1,0 +1,4 @@
+[Execute]
+Action=setMouseWheelAsKeys
+Value=UpDown
+next=

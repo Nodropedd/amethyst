@@ -1,0 +1,9 @@
+[Execute]
+Action=mcicommand
+command=open "%path%\..\Music\Opening2_MP3.mp3" alias mp3
+next=play mp3
+
+[play mp3]
+Action=mcicommand
+command=play mp3
+next=

@@ -1,0 +1,5 @@
+[Execute]
+Action=registerCheatEvent
+Cheat=EasyRPG
+Value=62006
+next=

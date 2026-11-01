@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <title>EasyRPG Web Player</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="play-page">
+  <div id="viewport">
+    <div id="screen">
+      <canvas id="canvas" tabindex="-1" class="unselectable" aria-label="Game screen"></canvas>
+    </div>
+
+    <!-- EasyRPG Player writes its status messages into this element -->
+    <div id="status" aria-hidden="true"></div>
+
+    <header id="toolbar" class="unselectable">
+      <button id="btn-back" class="tb-btn" title="Back to library" aria-label="Back to library">
+        <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg>
+      </button>
+      <span id="game-title">Loading…</span>
+      <span class="tb-spacer"></span>
+      <button id="btn-settings" class="tb-btn" title="Player settings (F1)" aria-label="Player settings">
+        <svg viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></svg>
+      </button>
+      <button id="btn-screenshot" class="tb-btn" title="Save a screenshot (F7)" aria-label="Screenshot">
+        <svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+      </button>
+      <button id="btn-reset" class="tb-btn" title="Back to title screen (F12)" aria-label="Back to title screen">
+        <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5" /></svg>
+      </button>
+      <button id="btn-touch" class="tb-btn" title="Show / hide touch controls" aria-label="Toggle touch controls">
+        <svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="10" rx="5" /><path d="M7.5 10v4M5.5 12h4" /><circle cx="15.5" cy="11" r=".9" /><circle cx="17.8" cy="13.2" r=".9" /></svg>
+      </button>
+      <button id="btn-help" class="tb-btn" title="Controls" aria-label="Controls help">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.3c-.8.4-1.2 1-1.2 1.8v.6M12 17.2v.1" /></svg>
+      </button>
+      <button id="btn-fullscreen" class="tb-btn" title="Fullscreen" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" /></svg>
+      </button>
+    </header>
+
+    <div id="touch-controls" class="unselectable" aria-hidden="true">
+      <div id="dpad">
+        <div class="arm" data-dir="up"></div>
+        <div class="arm" data-dir="left"></div>
+        <div class="hub"></div>
+        <div class="arm" data-dir="right"></div>
+        <div class="arm" data-dir="down"></div>
+      </div>
+      <div id="buttons">
+        <button class="pad-btn pad-small" data-code="ShiftLeft">Shift</button>
+        <button class="pad-btn pad-b" data-code="Escape">B</button>
+        <button class="pad-btn pad-a" data-code="Enter">A</button>
+      </div>
+    </div>
+
+    <div id="sound-hint" hidden>Tap or press a key to enable sound</div>
+
+    <div id="loading" class="overlay">
+      <div class="card">
+        <div class="logo-mark" aria-hidden="true"></div>
+        <p id="loading-text">Loading…</p>
+        <progress id="loading-bar"></progress>
+      </div>
+    </div>
+
+    <div id="error" class="overlay" hidden>
+      <div class="card">
+        <h1 id="error-title">Something went wrong</h1>
+        <p id="error-message"></p>
+        <div class="card-actions">
+          <a class="btn btn-primary" href="index.html">Back to library</a>
+          <button id="error-reload" class="btn">Reload</button>
+        </div>
+        <details id="error-log" hidden>
+          <summary>Technical details</summary>
+          <pre></pre>
+          <button id="error-copy" class="btn btn-small">Copy full log</button>
+        </details>
+      </div>
+    </div>
+
+    <div id="help" class="overlay" hidden>
+      <div class="card">
+        <h1>Controls</h1>
+        <table class="keys">
+          <tr><th>Move</th><td><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td></tr>
+          <tr><th>Confirm / talk</th><td><kbd>Enter</kbd> <kbd>Space</kbd> <kbd>Z</kbd></td></tr>
+          <tr><th>Cancel / menu</th><td><kbd>Esc</kbd> <kbd>X</kbd> <kbd>C</kbd> <kbd>V</kbd> <kbd>B</kbd> <kbd>N</kbd></td></tr>
+          <tr><th>Shift</th><td><kbd>Shift</kbd></td></tr>
+          <tr><th>Fast forward</th><td>hold <kbd>F</kbd> (or <kbd>G</kbd> for faster)</td></tr>
+          <tr><th>Player settings</th><td><kbd>F1</kbd> (volume, key mapping, video…)</td></tr>
+          <tr><th>Show FPS</th><td><kbd>F2</kbd></td></tr>
+          <tr><th>Screenshot</th><td><kbd>F7</kbd></td></tr>
+          <tr><th>Back to title</th><td><kbd>F12</kbd></td></tr>
+        </table>
+        <p class="muted">Gamepads work too. Save games are stored in this browser automatically when you save in the game; you can export them from the library.</p>
+        <div class="card-actions">
+          <button id="help-close" class="btn btn-primary">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/play.js"></script>
+</body>
+</html>
