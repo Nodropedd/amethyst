@@ -2,12 +2,12 @@
 
 import * as db from './db.js';
 import { describeResult, entriesFromFileList, jobsFromDataTransfer, jobsFromFiles, runJob } from './importer.js';
-import { deleteSaves, exportSaves, importSaves, listSaves } from './saves.js';
+import { deleteGameSaves, exportGameSaves, importGameSaves, listGameSaves, saveFileHint } from './saves.js';
 import { formatBytes } from './util.js';
 
 const $ = (sel) => document.querySelector(sel);
 
-const ENGINE_NAMES = { 2000: 'RPG Maker 2000', 2003: 'RPG Maker 2003' };
+const ENGINE_NAMES = { 2000: 'RPG Maker 2000', 2003: 'RPG Maker 2003', mv: 'RPG Maker MV', mz: 'RPG Maker MZ' };
 
 // ------------------------------------------------------------------ helpers
 
@@ -263,6 +263,9 @@ async function openGameDialog(id) {
     img.hidden = false;
   } else img.hidden = true;
   $('#gd-encoding').value = game.textEncoding || '';
+  const html5 = game.engine === 'mv' || game.engine === 'mz';
+  $('#gd-encoding-section').hidden = html5; // MV/MZ games are Unicode
+  $('#gd-import-input').accept = saveFileHint(game);
   await renderSaves();
   if (typeof dialog.showModal === 'function') dialog.showModal();
   else dialog.setAttribute('open', '');
@@ -272,7 +275,7 @@ async function renderSaves() {
   const list = $('#gd-saves');
   let saves = [];
   try {
-    saves = await listSaves(dialogGame.id);
+    saves = await listGameSaves(dialogGame);
   } catch (err) {
     console.warn(err);
   }
@@ -281,14 +284,14 @@ async function renderSaves() {
   } else {
     list.replaceChildren(...saves.map((s) => el('li', {},
       el('span', {}, s.name),
-      el('span', { class: 'muted' }, `${s.date.toLocaleString()} · ${formatBytes(s.size)}`))));
+      el('span', { class: 'muted' }, s.date ? `${s.date.toLocaleString()} · ${formatBytes(s.size)}` : formatBytes(s.size)))));
   }
   $('#gd-export').disabled = !saves.length;
   $('#gd-delete-saves').disabled = !saves.length;
 }
 
 $('#gd-export').addEventListener('click', async () => {
-  const blob = await exportSaves(dialogGame.id);
+  const blob = await exportGameSaves(dialogGame);
   if (!blob) return toast('This game has no save games yet.');
   const safe = dialogGame.title.replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60) || dialogGame.id;
   downloadBlob(blob, `${safe} - saves.zip`);
@@ -299,7 +302,7 @@ $('#gd-import-input').addEventListener('change', async (e) => {
   e.target.value = '';
   if (!files.length) return;
   try {
-    const n = await importSaves(dialogGame.id, files);
+    const n = await importGameSaves(dialogGame, files);
     toast(`Imported ${n} save game${n === 1 ? '' : 's'}.`, 'success');
   } catch (err) {
     toast(err.message || String(err), 'error');
@@ -308,7 +311,7 @@ $('#gd-import-input').addEventListener('change', async (e) => {
 });
 $('#gd-delete-saves').addEventListener('click', async () => {
   if (!confirm(`Delete all save games of “${dialogGame.title}”? This cannot be undone.\n\nTip: export them first.`)) return;
-  await deleteSaves(dialogGame.id);
+  await deleteGameSaves(dialogGame);
   toast('Save games deleted.');
   renderSaves();
 });
@@ -408,7 +411,7 @@ function adaptToDevice() {
   const touchOnly = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   if (!touchOnly) return;
   $('.dz-title').textContent = 'Add a game';
-  $('.dz-sub').innerHTML = 'Choose the game\'s <b>ZIP</b> file (it must contain <code>RPG_RT.ldb</code>)';
+  $('.dz-sub').innerHTML = 'Choose the game\'s <b>ZIP</b> file';
   for (const id of ['#pick-folder', '#rtp-pick-folder']) $(id).hidden = true;
 }
 

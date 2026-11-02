@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="description" content="Play RPG Maker 2000 and 2003 games in your browser with EasyRPG Player. Import a game ZIP or folder; everything stays on your device.">
+  <meta name="description" content="Play RPG Maker 2000, 2003, MV and MZ games in your browser. Import a game ZIP or folder; everything stays on your device.">
   <meta name="theme-color" content="#140f1f">
   <title>Amethyst · EasyRPG Web Player</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -25,13 +25,13 @@
 
   <main>
     <section class="hero">
-      <h1>Play RPG Maker 2000 &amp; 2003 games in your browser</h1>
-      <p class="lead">Powered by <a href="https://easyrpg.org/" target="_blank" rel="noopener">EasyRPG Player</a>. Games you add stay on this device — nothing is uploaded anywhere.</p>
+      <h1>Play RPG Maker 2000, 2003, MV &amp; MZ games in your browser</h1>
+      <p class="lead">2000/2003 games run on <a href="https://easyrpg.org/" target="_blank" rel="noopener">EasyRPG Player</a>, MV/MZ games run natively. Games you add stay on this device — nothing is uploaded anywhere.</p>
 
       <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Import a game: drop a ZIP file or folder here, or press Enter to choose a ZIP file">
         <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 31V9m0 0l-8 8m8-8l8 8" /><path d="M8 29v8a3 3 0 0 0 3 3h26a3 3 0 0 0 3-3v-8" /></svg>
         <p class="dz-title">Drop a game here</p>
-        <p class="dz-sub">a <b>ZIP</b> archive or the <b>game folder</b> (the one that contains <code>RPG_RT.ldb</code>)</p>
+        <p class="dz-sub">a <b>ZIP</b> archive or the <b>game folder</b> (with <code>RPG_RT.ldb</code>, or for MV/MZ with <code>index.html</code>)</p>
         <div class="dz-actions">
           <button id="pick-zip" class="btn btn-primary" type="button">Choose ZIP file…</button>
           <button id="pick-folder" class="btn" type="button">Choose folder…</button>
@@ -113,11 +113,12 @@
       <div class="faq">
         <details>
           <summary>Which games work?</summary>
-          <p>Games made with <b>RPG Maker 2000</b> and <b>RPG Maker 2003</b> (also called RM2k / RM2k3), including most games that use common patches such as Power Mode, DynRPG (partially), Maniac Patch (partially) and EasyRPG features. RPG Maker XP, VX, VX Ace, MV and MZ games are <b>not</b> supported. See the <a href="https://easyrpg.org/player/" target="_blank" rel="noopener">EasyRPG compatibility notes</a> for details.</p>
+          <p><b>RPG Maker 2000</b> and <b>2003</b> games (RM2k / RM2k3) run on EasyRPG Player, including most games that use common patches such as Power Mode, DynRPG (partially), Maniac Patch (partially) and EasyRPG features — see the <a href="https://easyrpg.org/player/" target="_blank" rel="noopener">EasyRPG compatibility notes</a>.</p>
+          <p><b>RPG Maker MV</b> and <b>MZ</b> games are HTML5 games and run directly in the browser, including encrypted ones. A few MV/MZ games use plugins that only work in the desktop (NW.js) version; those may not run here. RPG Maker XP, VX and VX Ace games are <b>not</b> supported.</p>
         </details>
         <details>
           <summary>How do I add a game?</summary>
-          <p>Drop the game's ZIP file onto the box at the top, or click <i>Choose ZIP file…</i>. If you already extracted the game, click <i>Choose folder…</i> and pick the game folder (it contains <code>RPG_RT.ldb</code> and <code>RPG_RT.lmt</code>). Archives in other formats (RAR, 7z, LZH) need to be extracted first. ZIP files with Japanese file names are handled automatically.</p>
+          <p>Drop the game's ZIP file onto the box at the top, or click <i>Choose ZIP file…</i>. If you already extracted the game, click <i>Choose folder…</i> and pick the game folder (for 2000/2003 it contains <code>RPG_RT.ldb</code>; for MV/MZ it contains <code>index.html</code> and a <code>js</code> folder, for MV often inside <code>www</code> — picking the outer folder works too). Archives in other formats (RAR, 7z, LZH) need to be extracted first. ZIP files with Japanese file names are handled automatically. Games packed into a single .exe file cannot be imported.</p>
         </details>
         <details>
           <summary>Controls</summary>
@@ -125,7 +126,7 @@
         </details>
         <details>
           <summary>Where are my save games?</summary>
-          <p>When you save in a game, the save file is stored in this browser and is still there next time — even after you reload or update the game. Use the <i>⋯</i> button of a game in your library to export saves as a ZIP (to back them up or move them to another device) or to import <code>SaveXX.lsd</code> files, including saves from the PC version of the game.</p>
+          <p>When you save in a game, the save file is stored in this browser and is still there next time — even after you reload or update the game. Use the <i>⋯</i> button of a game in your library to export saves as a ZIP (to back them up or move them to another device) or to import save files from the PC version of the game: <code>SaveXX.lsd</code> (2000/2003), <code>fileX.rpgsave</code> (MV) or <code>fileX.rmmzsave</code> (MZ).</p>
         </details>
         <details>
           <summary>Graphics or sounds are missing</summary>
@@ -148,7 +149,7 @@
   </main>
 
   <footer class="site-footer">
-    <p>Runs <a href="https://easyrpg.org/player/" target="_blank" rel="noopener">EasyRPG Player</a> 0.8 (WebAssembly build), free software licensed under the <a href="player/COPYING">GNU GPL v3</a> — <a href="https://github.com/EasyRPG/Player" target="_blank" rel="noopener">source code</a>. RPG Maker is a trademark of Gotcha Gotcha Games / KADOKAWA; this site is not affiliated with them or with the EasyRPG project.</p>
+    <p>RPG Maker 2000/2003 games run on <a href="https://easyrpg.org/player/" target="_blank" rel="noopener">EasyRPG Player</a> 0.8 (WebAssembly build), free software licensed under the <a href="player/COPYING">GNU GPL v3</a> — <a href="https://github.com/EasyRPG/Player" target="_blank" rel="noopener">source code</a>. RPG Maker is a trademark of Gotcha Gotcha Games / KADOKAWA; this site is not affiliated with them or with the EasyRPG project.</p>
   </footer>
 
   <dialog id="game-dialog">
@@ -170,6 +171,7 @@
         <input type="file" id="gd-import-input" accept=".lsd,.zip" multiple hidden>
       </div>
 
+      <div id="gd-encoding-section">
       <h3>Text encoding</h3>
       <select id="gd-encoding">
         <option value="">Automatic (recommended)</option>
@@ -187,6 +189,7 @@
         <option value="1257">Baltic (Windows-1257)</option>
         <option value="1253">Greek (Windows-1253)</option>
       </select>
+      </div>
 
       <h3>Danger zone</h3>
       <div class="panel-actions">

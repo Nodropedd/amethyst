@@ -1,15 +1,16 @@
 # Amethyst · EasyRPG Web Player
 
-A website for playing **RPG Maker 2000 and 2003** games in the browser, powered by
-[EasyRPG Player](https://easyrpg.org/player/) compiled to WebAssembly.
+A website for playing **RPG Maker 2000, 2003, MV and MZ** games in the browser.
+2000/2003 games run on [EasyRPG Player](https://easyrpg.org/player/) compiled to
+WebAssembly; MV and MZ games are HTML5 games and run directly.
 
-- **Import any game.** Drop a game ZIP or folder on the page, or pick it with the buttons. ZIPs with Japanese, Korean, Chinese or Cyrillic file names work too.
+- **Import any game.** Drop a game ZIP or folder on the page, or pick it with the buttons. The engine is detected automatically. ZIPs with Japanese, Korean, Chinese or Cyrillic file names work too, and so do encrypted MV/MZ games. NW.js runtime files in MV/MZ downloads are skipped to save space.
 - **Everything stays local.** Games, saves and settings live in the browser's IndexedDB. Nothing is uploaded, and the site needs no server-side code.
-- **Saves.** In-game saves persist automatically. From the library you can export them as a ZIP, import them (including `SaveXX.lsd` files from the PC version) or delete them.
+- **Saves.** In-game saves persist automatically, and each game's saves are kept separate. From the library you can export them as a ZIP, import them (including PC saves: `SaveXX.lsd`, MV `fileX.rpgsave`, MZ `fileX.rmmzsave`) or delete them.
 - **RTP support.** Import your RPG Maker 2000/2003 RTP once. Games that need it then use it automatically, and EasyRPG's RTP name table makes games built for the Japanese RTP work with the English one, and the other way round.
 - **Better MIDI.** Add a `.sf2` SoundFont once and every game uses it.
 - **Works on phones and tablets.** There's an on-screen D-pad with A/B/Shift buttons, and gamepads and keyboard work too. The player page also has fullscreen, screenshot, settings (F1) and reset buttons.
-- **Hosted games.** Site owners can publish games in `games/` so visitors can play them without importing anything. A free demo (the EasyRPG TestGame for RPG Maker 2003) is included.
+- **Hosted games.** Site owners can publish RPG Maker 2000/2003 games in `games/` so visitors can play them without importing anything. A free demo (the EasyRPG TestGame for RPG Maker 2003) is included.
 
 ## Running it
 
@@ -43,7 +44,9 @@ Only publish games you have the right to distribute.
 
 ## How it works
 
-The official EasyRPG web build fetches game files on demand from `games/<game>/…` using an `index.json` file list. For games imported into the browser, `play.html` builds that `index.json` on the fly, then answers the player's requests from IndexedDB through a small `XMLHttpRequest` wrapper (`js/xhr-shim.js`). The player binary itself is unmodified.
+**RPG Maker 2000/2003:** the official EasyRPG web build fetches game files on demand from `games/<game>/…` using an `index.json` file list. For games imported into the browser, `play.html` builds that `index.json` on the fly, then answers the player's requests from IndexedDB through a small `XMLHttpRequest` wrapper (`js/xhr-shim.js`). The player binary itself is unmodified.
+
+**RPG Maker MV/MZ:** `play.html` loads the game's own `index.html` in an iframe at `html5/<game>/`. A service worker (`sw.js`) answers every request below that path from IndexedDB, including range requests for media and case-insensitive file names. It also injects `js/html5-shim.js`, which gives each game its own `localStorage` namespace (MV saves would otherwise overwrite each other) and scales the game to the window like the desktop version does.
 
 | Path | Purpose |
 | --- | --- |
@@ -52,15 +55,18 @@ The official EasyRPG web build fetches game files on demand from `games/<game>/�
 | `js/importer.js` | Reads ZIPs and folders, detects games / RTP / SoundFonts, stores files |
 | `js/zip.js` | ZIP reader (streams from disk, ZIP64, legacy file name encodings) and writer |
 | `js/gamefs.js` | Builds `index.json` and resolves player requests, with RTP fallback |
-| `js/xhr-shim.js` | Serves game files to the player from IndexedDB |
-| `js/saves.js` | Reads and writes EasyRPG's save storage (IDBFS) |
+| `js/xhr-shim.js` | Serves game files to EasyRPG Player from IndexedDB |
+| `sw.js`, `js/html5-shim.js` | Serve MV/MZ games from IndexedDB; per-game saves and scaling |
+| `js/saves.js` | Reads and writes save games (EasyRPG IDBFS, MV localStorage, MZ localforage) |
 | `js/rtp-table.json` | RTP file name table, converted from EasyRPG's `src/rtp_table.cpp` |
 | `player/` | EasyRPG Player WebAssembly build (see `player/README.md`) |
 | `tools/gencache.mjs` | Indexer for hosted games |
 
 ## Browser support
 
-The site supports current Chrome, Edge, Firefox and Safari on desktop and mobile. It needs WebAssembly and IndexedDB. Some private-browsing modes block IndexedDB; use a normal window in that case.
+The site supports current Chrome, Edge, Firefox and Safari on desktop and mobile. It needs WebAssembly and IndexedDB, and MV/MZ games also need service workers. Some private-browsing modes block these (for example, Firefox private windows have no service workers); use a normal window in that case.
+
+A few MV/MZ games depend on plugins that only work in the desktop (NW.js) version, for example plugins that read files with Node.js. Those games may not run in any browser. Games packed into a single executable (Enigma Virtual Box and similar) cannot be imported.
 
 ## Licenses
 

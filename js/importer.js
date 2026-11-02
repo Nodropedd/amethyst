@@ -143,6 +143,9 @@ async function importEntries(allEntries, ctx) {
     .sort((a, b) => depthOf(a.path) - depthOf(b.path));
   if (ldbs.length) return importGame(entries, dirname(ldbs[0].path), ctx);
 
+  const html5 = detectHtml5(entries);
+  if (html5) return importHtml5(entries, html5, ctx);
+
   const rtp = detectRtp(entries);
   if (rtp) return importRtp(entries, rtp, ctx);
 
@@ -168,15 +171,15 @@ function explainUnsupported(entries) {
   const names = entries.map((e) => e.path.toLowerCase());
   const has = (re) => names.some((n) => re.test(n));
   if (has(/(^|\/)game\.(rgssad|rgss2a|rgss3a|rxproj|rvproj|rvproj2)$/) || has(/\.(rxdata|rvdata|rvdata2)$/)) {
-    return 'This looks like an RPG Maker XP / VX / VX Ace game. EasyRPG Player only runs RPG Maker 2000 and 2003 games.';
+    return 'This looks like an RPG Maker XP / VX / VX Ace game. Those engines are not supported; this site runs RPG Maker 2000, 2003, MV and MZ games.';
   }
-  if (has(/(^|\/)(www\/)?js\/(rpg_core|rmmz_core)\.js$/)) {
-    return 'This looks like an RPG Maker MV / MZ game. Those are already HTML5 games and are not supported by EasyRPG Player.';
+  if (has(/(^|\/)js\/(rpg_core|rmmz_core)\.js$/)) {
+    return 'This looks like an RPG Maker MV / MZ game, but its index.html is missing. Import the complete game folder (for MV usually the "www" folder).';
   }
   if (has(/(^|\/)rpg_rt\.exe$/)) {
     return 'Found RPG_RT.exe but no RPG_RT.ldb. The game data may be packed inside the .exe (common for encrypted releases). Look for an unpacked version of the game.';
   }
-  return 'No RPG Maker 2000/2003 game found. A game folder must contain RPG_RT.ldb and RPG_RT.lmt. You can also import an RTP folder or a .sf2 SoundFont here.';
+  return 'No RPG Maker game found. RPG Maker 2000/2003 games contain RPG_RT.ldb; MV/MZ games contain index.html and a js folder. You can also import an RTP folder or a .sf2 SoundFont here.';
 }
 
 async function writeFiles(owner, list, onProgress, onFile) {
@@ -336,6 +339,130 @@ function computeAliases(files, rootDir) {
   return aliases;
 }
 
+// ---------------------------------------------------------------- RPG Maker MV / MZ
+
+function detectHtml5(entries) {
+  const cores = entries
+    .filter((e) => /(^|\/)js\/(rpg_core|rmmz_core)\.js$/i.test(e.path))
+    .sort((a, b) => a.path.split('/').length - b.path.split('/').length);
+  for (const core of cores) {
+    const root = dirname(dirname(core.path));
+    const index = (root ? `${root}/` : '') + 'index.html';
+    if (entries.some((e) => e.path.toLowerCase() === index.toLowerCase())) {
+      return { rootDir: root, engine: /rmmz_core/i.test(core.path) ? 'mz' : 'mv' };
+    }
+  }
+  return null;
+}
+
+// NW.js runtime files next to an MZ game (and in some MV releases): not needed in a browser.
+const NWJS_FILE = /^(game|nw|nwjc|notification_helper|chromedriver|payload|crashpad_handler)(\.exe)?$|\.(dll|pak|bin|exe|so|dylib)$|^icudtl\.dat$|^credits\.html$|^d3dcompiler/i;
+const NWJS_DIR = /^(locales|swiftshader|pnacl|nwjs[^/]*)$/i;
+
+function parseJson(bytes) {
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes).replace(/^\uFEFF/, ''));
+  } catch {
+    return null;
+  }
+}
+
+/** MV/MZ "encrypted" images: 16 byte header, then the PNG with its first 16 bytes XORed with the key. */
+function decryptRpgImage(bytes, keyHex) {
+  if (!keyHex || bytes.length < 32) return null;
+  const key = (keyHex.match(/[0-9a-f]{2}/gi) || []).map((h) => parseInt(h, 16));
+  if (key.length < 16) return null;
+  const out = bytes.slice(16);
+  for (let i = 0; i < 16; i++) out[i] ^= key[i];
+  return out;
+}
+
+async function importHtml5(entries, { rootDir, engine }, ctx) {
+  const prefix = rootDir ? `${rootDir}/` : '';
+  const files = entries
+    .filter((e) => e.path.startsWith(prefix))
+    .map((e) => ({ entry: e, rel: e.path.slice(prefix.length) }))
+    .filter((f) => {
+      if (!f.rel) return false;
+      const segs = f.rel.split('/');
+      if (segs.length === 1) return !NWJS_FILE.test(segs[0]);
+      return !NWJS_DIR.test(segs[0]);
+    });
+
+  ctx.onProgress?.({ phase: 'analyzing' });
+  const find = (relLower) => files.find((f) => f.rel.toLowerCase() === relLower);
+
+  const systemFile = find('data/system.json');
+  if (!systemFile) throw new ImportError('data/System.json is missing, so this RPG Maker MV/MZ game cannot be started. Import the complete game folder.');
+  const system = parseJson(await systemFile.entry.read()) || {};
+
+  let htmlTitle = '';
+  const indexFile = find('index.html');
+  if (indexFile) {
+    const m = new TextDecoder().decode(await indexFile.entry.read()).match(/<title>([^<]*)<\/title>/i);
+    if (m) htmlTitle = m[1].trim();
+  }
+  const title = (typeof system.gameTitle === 'string' && system.gameTitle.trim())
+    || htmlTitle
+    || (rootDir && !/^www$/i.test(basename(rootDir)) ? basename(rootDir) : '')
+    || (rootDir && rootDir.includes('/') ? basename(dirname(rootDir)) : '')
+    || ctx.name || 'Untitled game';
+  const id = `${slugify(title)}-${hashBytes(new TextEncoder().encode(title))}`;
+
+  const existing = await db.getGame(id);
+  if (existing && ctx.confirmReplace && !(await ctx.confirmReplace(existing))) {
+    return { type: 'cancelled' };
+  }
+
+  // Title screen image for the thumbnail (plain or encrypted).
+  let titleRel = null;
+  const titleName = typeof system.title1Name === 'string' ? system.title1Name : '';
+  if (titleName) {
+    for (const ext of ['png', 'rpgmvp', 'png_']) {
+      const f = find(`img/titles1/${titleName}.${ext}`.toLowerCase());
+      if (f) {
+        titleRel = f.rel;
+        break;
+      }
+    }
+  }
+
+  let titleBytes = null;
+  let size = 0;
+  try {
+    await db.deleteFiles(id);
+    await db.setExtra(id, null);
+    size = await writeFiles(id, files, ctx.onProgress, (item, data) => {
+      if (item.rel === titleRel) titleBytes = data;
+    });
+  } catch (err) {
+    await db.deleteGame(id).catch(() => {});
+    throw friendlyStorageError(err);
+  }
+
+  ctx.onProgress?.({ phase: 'finishing' });
+  let thumbnail = null;
+  if (titleBytes) {
+    const png = extOf(titleRel) === 'png' ? titleBytes : decryptRpgImage(titleBytes, system.encryptionKey);
+    if (png) thumbnail = await makeThumbnail(png, 'png');
+  }
+
+  const game = {
+    id,
+    title,
+    engine,
+    size,
+    fileCount: files.length,
+    mzGameId: engine === 'mz' && system.advanced && system.advanced.gameId ? String(system.advanced.gameId) : null,
+    thumbnail,
+    addedAt: existing?.addedAt ?? Date.now(),
+    updatedAt: Date.now(),
+    lastPlayed: existing?.lastPlayed ?? null,
+  };
+  await db.putGame(game);
+  return { type: 'game', game, replaced: !!existing };
+}
+
 function detectRtp(entries) {
   const byParent = new Map();
   for (const e of entries) {
@@ -424,6 +551,7 @@ async function makeThumbnail(bytes, ext) {
   try {
     const canvas = document.createElement('canvas');
     const ctx2d = canvas.getContext('2d');
+    let photo = false;
     if (ext === 'xyz') {
       const img = await decodeXyz(bytes);
       canvas.width = img.width;
@@ -432,13 +560,17 @@ async function makeThumbnail(bytes, ext) {
     } else {
       const type = ext === 'png' ? 'image/png' : 'image/bmp';
       const bmp = await createImageBitmap(new Blob([bytes], { type }));
-      canvas.width = Math.min(bmp.width, 640);
-      canvas.height = Math.min(bmp.height, 480);
-      ctx2d.imageSmoothingEnabled = false;
-      ctx2d.drawImage(bmp, 0, 0);
+      const scale = Math.min(1, 480 / bmp.width, 360 / bmp.height);
+      canvas.width = Math.max(1, Math.round(bmp.width * scale));
+      canvas.height = Math.max(1, Math.round(bmp.height * scale));
+      ctx2d.imageSmoothingEnabled = scale < 1; // keep pixel art crisp, smooth large images
+      ctx2d.imageSmoothingQuality = 'high';
+      ctx2d.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+      photo = scale < 1;
       bmp.close?.();
     }
-    return canvas.toDataURL('image/png');
+    // Large (MV/MZ) title screens are stored as JPEG to keep the library small.
+    return photo ? canvas.toDataURL('image/jpeg', 0.86) : canvas.toDataURL('image/png');
   } catch (err) {
     console.warn('Could not create a thumbnail', err);
     return null;

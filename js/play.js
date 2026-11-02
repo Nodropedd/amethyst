@@ -16,6 +16,7 @@ const statusEl = $('#status');
 
 const isTouch = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 let player = null;
+let frame = null; // <iframe> of an RPG Maker MV/MZ game
 let started = false;
 let failed = false;
 
@@ -123,9 +124,21 @@ const KEY_CODES = {
 };
 const KEY_NAMES = { ShiftLeft: 'Shift', KeyZ: 'z', KeyX: 'x' };
 
-/** Send a synthetic key event to the player (it listens on the canvas). */
+/** Where synthetic keys go: EasyRPG listens on its canvas, MV/MZ games on their document. */
+function keyTarget() {
+  if (frame) {
+    try {
+      return frame.contentDocument;
+    } catch {
+      return null;
+    }
+  }
+  return document.getElementById('canvas');
+}
+
+/** Send a synthetic key event to the game. */
 function sendKey(type, code) {
-  const target = document.getElementById('canvas');
+  const target = keyTarget();
   if (!target) return;
   const ev = new KeyboardEvent(type, { code, key: KEY_NAMES[code] || code, bubbles: true, cancelable: true });
   const keyCode = KEY_CODES[code] || 0;
@@ -170,6 +183,12 @@ function makeKeyHolder(code, onChange) {
 }
 
 function focusGame() {
+  if (frame) {
+    try {
+      frame.contentWindow.focus();
+    } catch { /* ignore */ }
+    return;
+  }
   const c = document.getElementById('canvas');
   if (c && c.focus) c.focus({ preventScroll: true });
 }
@@ -183,8 +202,8 @@ window.addEventListener('keydown', (e) => {
   const inForm = e.target && (e.target.closest?.('input, textarea, select, [contenteditable]'));
   if (inForm) return;
   if (BLOCKED_KEYS.has(e.key) || e.key === 'Spacebar') e.preventDefault();
-  // Keys pressed while the canvas is not focused (e.g. after clicking the toolbar): forward them.
-  if (e.target !== document.getElementById('canvas')) {
+  // Keys pressed while the game is not focused (e.g. after clicking the toolbar): forward them.
+  if (frame || e.target !== document.getElementById('canvas')) {
     forwardKey(e);
     focusGame();
   }
@@ -192,11 +211,11 @@ window.addEventListener('keydown', (e) => {
 
 window.addEventListener('keyup', (e) => {
   if (!started) return;
-  if (e.target !== document.getElementById('canvas') && !e.target?.closest?.('input, textarea, select')) forwardKey(e);
+  if ((frame || e.target !== document.getElementById('canvas')) && !e.target?.closest?.('input, textarea, select')) forwardKey(e);
 }, true);
 
 function forwardKey(e) {
-  const target = document.getElementById('canvas');
+  const target = keyTarget();
   if (!target || !target.dispatchEvent) return;
   const ev = new KeyboardEvent(e.type, {
     key: e.key, code: e.code, location: e.location, repeat: e.repeat,
@@ -256,6 +275,10 @@ toolbarAction('#btn-screenshot', () => {
   if (player && player.api && player.api.takeScreenshot) player.api.takeScreenshot();
 });
 toolbarAction('#btn-reset', () => {
+  if (frame) {
+    if (confirm('Restart the game? Unsaved progress will be lost.')) frame.contentWindow.location.reload();
+    return;
+  }
   if (player && player.api && confirm('Return to the title screen? Unsaved progress will be lost.')) player.api.requestReset();
 });
 toolbarAction('#btn-help', () => {
@@ -293,15 +316,24 @@ for (const ev of ['fullscreenchange', 'webkitfullscreenchange', 'orientationchan
 
 // ------------------------------------------------------------------ touch controls
 
+// MV/MZ games have their own touch support, so the on-screen pad is opt-in there.
+let touchPrefKey = 'easyrpg-touch-controls';
+
 function setTouchControls(on) {
   document.body.classList.toggle('touch-on', on);
-  localStorage.setItem('easyrpg-touch-controls', on ? '1' : '0');
+  try {
+    localStorage.setItem(touchPrefKey, on ? '1' : '0');
+  } catch { /* ignore */ }
   relayout();
 }
 
-function initTouchControls() {
-  const saved = localStorage.getItem('easyrpg-touch-controls');
-  setTouchControls(saved === null ? isTouch : saved === '1');
+function initTouchControls(html5 = false) {
+  touchPrefKey = html5 ? 'html5-touch-controls' : 'easyrpg-touch-controls';
+  let saved = null;
+  try {
+    saved = localStorage.getItem(touchPrefKey);
+  } catch { /* ignore */ }
+  setTouchControls(saved === null ? (isTouch && !html5) : saved === '1');
 
   // D-pad: direction is chosen by angle from the centre, so sliding works.
   const dpad = $('#dpad');
@@ -477,7 +509,6 @@ async function main() {
     return;
   }
 
-  initTouchControls();
   setLoading('Opening game…');
 
   let game = null;
@@ -486,6 +517,13 @@ async function main() {
   } catch (err) {
     console.warn('Library not available', err);
   }
+
+  if (game && (game.engine === 'mv' || game.engine === 'mz')) {
+    initTouchControls(true);
+    await startHtml5Game(game);
+    return;
+  }
+  initTouchControls(false);
 
   let title;
   if (game) {
@@ -508,7 +546,7 @@ async function main() {
     title = hosted?.title || gameId;
   }
 
-  document.title = `${title} – EasyRPG Web Player`;
+  document.title = `${title} – Amethyst`;
   $('#game-title').textContent = title;
 
   const wasmBinary = await fetchWasm('player/index.wasm');
@@ -528,6 +566,73 @@ async function main() {
 
   canvas.addEventListener('pointerdown', focusGame);
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
+// ------------------------------------------------------------------ RPG Maker MV / MZ
+
+function withTimeout(promise, ms, message) {
+  return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))]);
+}
+
+async function startHtml5Game(game) {
+  document.body.classList.add('html5-game');
+  document.title = `${game.title} – Amethyst`;
+  $('#game-title').textContent = game.title;
+
+  if (!('serviceWorker' in navigator)) {
+    showError('Not available in this browser window',
+      'RPG Maker MV and MZ games need service workers, which this browser has turned off (for example in Firefox private windows). Please use a normal window of a current browser.');
+    return;
+  }
+
+  setLoading('Preparing game…');
+  await navigator.serviceWorker.register('sw.js');
+  await withTimeout(navigator.serviceWorker.ready, 20000, 'The game service did not start. Reload the page to try again.');
+  db.updateGame(game.id, { lastPlayed: Date.now() }).catch(() => {});
+
+  window.addEventListener('message', (e) => {
+    if (e.origin === location.origin && e.data && e.data.type === 'amethyst-game-error') console.error(`[game] ${e.data.message}`);
+  });
+
+  frame = document.createElement('iframe');
+  frame.id = 'game-frame';
+  frame.title = game.title;
+  frame.allow = 'autoplay; fullscreen; gamepad';
+  frame.setAttribute('allowfullscreen', '');
+  const loaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+  // Mouse movement over the game happens inside the frame: use it to reveal the toolbar.
+  // (Re-attached after every load, e.g. when the game restarts.)
+  frame.addEventListener('load', () => {
+    try {
+      frame.contentWindow.addEventListener('mousemove', pokeToolbar, { passive: true });
+    } catch { /* ignore */ }
+  });
+  frame.src = `html5/${encodeURIComponent(game.id)}/index.html`;
+  canvas.hidden = true;
+  $('#screen').append(frame);
+  setLoading('Starting the game…');
+  await loaded;
+
+  // Make sure the page really came from the game service (a forced reload can bypass it).
+  let served = false;
+  try {
+    served = !!frame.contentDocument.querySelector('script[data-game-id]');
+  } catch { /* ignore */ }
+  if (!served) {
+    if (!sessionStorage.getItem('html5-retry')) {
+      sessionStorage.setItem('html5-retry', '1');
+      location.reload();
+      return;
+    }
+    showError('Could not start the game', 'The game service is not active. Reload the page (without holding Shift) and try again.');
+    return;
+  }
+  sessionStorage.removeItem('html5-retry');
+
+  started = true;
+  hideLoading();
+  focusGame();
+  window.addEventListener('beforeunload', confirmLeave);
 }
 
 window.addEventListener('unhandledrejection', (e) => {

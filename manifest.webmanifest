@@ -1,7 +1,7 @@
 {
   "name": "Amethyst · EasyRPG Web Player",
   "short_name": "Amethyst",
-  "description": "Play RPG Maker 2000 and 2003 games in your browser with EasyRPG Player.",
+  "description": "Play RPG Maker 2000, 2003, MV and MZ games in your browser.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
