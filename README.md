@@ -74,3 +74,5 @@ A few MV/MZ games depend on plugins that only work in the desktop (NW.js) versio
 - fflate (`js/vendor/fflate.min.js`) is MIT-licensed (`js/vendor/fflate.LICENSE`).
 - The demo game in `games/easyrpg-testgame-2003/` is the EasyRPG TestGame, licensed under the GNU GPL v3, with assets under CC BY 4.0 and other free licenses. See the `COPYING` and `AUTHORS.md` files in that folder.
 - RPG Maker is a trademark of Gotcha Gotcha Games / KADOKAWA. This project is not affiliated with them or with the EasyRPG project.
+
+## THIS PROJECT WAS 100% VIBECODED, AND I WONT UPDATE IT ANYMORE.
